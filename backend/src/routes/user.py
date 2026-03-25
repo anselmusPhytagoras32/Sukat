@@ -29,14 +29,14 @@ def get_db():
                 }
             )
 def lookup_customer(phone_number: str, db: Annotated[Session, Depends(get_db)]):
-    customer = db.query(Customer).filter(
-        Customer.phone_number == phone_number
-    ).first()
-
-    if not customer:
+    if (
+        customer := db.query(Customer)
+        .filter(Customer.phone_number == phone_number)
+        .first()
+    ):
+        return customer
+    else:
         raise HTTPException(status_code=404, detail="Customer not found")
-
-    return customer
 
 
 @router.post("/customers", response_model=CustomerResponse,
@@ -52,11 +52,11 @@ def lookup_customer(phone_number: str, db: Annotated[Session, Depends(get_db)]):
                 }
             )
 def create_guest_customer(guest_data: CustomerLookup, db: Annotated[Session, Depends(get_db)]):
-    existing_customer = db.query(Customer).filter(
-        Customer.phone_number == guest_data.phone_number
-    ).first()
-
-    if existing_customer:
+    if (
+        existing_customer := db.query(Customer)
+        .filter(existing_customer.phone_number == guest_data.phone_number)
+        .first()
+    ):
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
     new_customer = Customer(
@@ -64,9 +64,9 @@ def create_guest_customer(guest_data: CustomerLookup, db: Annotated[Session, Dep
         phone_number=guest_data.phone_number,
         is_guest=True
     )
-    
+
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)
-    
+
     return new_customer
